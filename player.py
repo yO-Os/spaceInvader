@@ -6,9 +6,8 @@ class Player(pygame.sprite.Sprite):
         self.y=y
         self.hit=hit
         self.active=active
-    def move(self,screen_width): 
-        keys=pygame.key.get_pressed()
-        if keys[pygame.K_a] and self.x-0.05>=0:
-            self.x-=0.05
-        elif keys[pygame.K_d] and self.x+50.05<=screen_width:
-            self.x+=0.05
+        file_path='sprites/player.png'
+        self.image = pygame.transform.scale(pygame.image.load(file_path).convert_alpha(),(50,40))
+        self.rect=self.image.get_rect(topleft=(self.x,self.y))
+    def destroy(self):
+        self.kill()
