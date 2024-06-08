@@ -3,8 +3,9 @@ from random import choice
 from player import Player
 from enmey import Enmey
 from bulet import BUllet
-count2=1
+count2=1#  Tells if the spaceship is hit
 count3=1
+first_ship,second_ship=False,False
 screen_height=700
 screen_width=800
 running=True
@@ -12,20 +13,23 @@ shoot=True
 row=5
 column=5
 count=0
-s_count=0
 time=pygame.time.get_ticks()
+#  used to add game components and function to the game
 class Game:
 
     global row ,column, screen,screen_width,screen_height
     def __init__(self):
-        self.enmeys=pygame.sprite.Group()
-        self.enmey_bulet=pygame.sprite.Group()
-        self.player=pygame.sprite.Group()
-        self.player_bulet=pygame.sprite.Group()
+        self.enmeys=pygame.sprite.Group()#  creates a group to add the enmey ship
+        self.enmey_bulet=pygame.sprite.Group()#  creates a group to add the enmey bullet
+        self.player=pygame.sprite.Group()#  creates a group to add the player ship
+        self.player_bulet=pygame.sprite.Group()#  creates a group to add the player bullet
+        #  bools that indicates the direction of the enmey
         self.right=True
         self.left= False
+
+#  creates and adds the objects to their respective groups
     def add(self):
-        self.player.add(Player((screen_width/2)-25,screen_height-130,False,True))
+        self.player.add(Player((screen_width/2)-25,screen_height-130,False,True))#  The true value signifies the ship is in the arena
         self.player.add(Player(0,screen_height-50,False,False))
         self.player.add(Player(60,screen_height-50,False,False))
         for y in range(1,row):
@@ -34,68 +38,62 @@ class Game:
                 elif y==2:self.enmeys.add(Enmey((x*60),(y*60),False,'yellow'))
                 elif y==3:self.enmeys.add(Enmey((x*60),(y*60),False,'red'))
                 elif y==4:self.enmeys.add(Enmey((x*60),(y*60),False,'blue'))
+#  moves the enmey ships
     def enmey_move(self):
-        enm = self.enmeys.sprites()
         self.enmeys.draw(screen)
-        cont1=0
-        for alien in enm:
-            #print("movment")
+        for alien in self.enmeys.sprites():
             if self.right:
                     alien.rect.x += 1
-
             elif self.left:
                     alien.rect.x -= 1
-            if alien.rect.right >= screen_width and cont1==3:
+            if alien.rect.right >= screen_width:
                  self.left=True
                  self.right=False
-            elif alien.rect.left <= 0 and cont1==0:
+            elif alien.rect.left <= 0:
                  self.left=False
                  self.right=True
             if (alien.hit):
                 alien.kill()
-            cont1+=1
     def player_move(self):
-        global count2,count3,shoot
+        global first_ship,second_ship,shoot
         keys=pygame.key.get_pressed()
         for play in self.player.sprites():
-            if keys[pygame.K_a] and play.rect.x-1>=0 and play.active:
+            if keys[pygame.K_a] and play.rect.x-1>=0 and play.active and shoot:
                 play.rect.x-=1
-            elif keys[pygame.K_d] and play.rect.x+51<=screen_width and play.active:
+            elif keys[pygame.K_d] and play.rect.x+51<=screen_width and play.active and shoot:
                 play.rect.x+=1
             if play.hit:
                  play.destroy()
-                 count2=2
-                 count3=0
-            if not(play.hit) and count2==2:
+                 first_ship=True
+                 second_ship=True
+            if not(play.hit) and first_ship:
                  play.active=True
-                 count2=1
-            if play.active and count3==0:
+                 first_ship=False
+            if play.active and second_ship:
                  shoot=False
                  if play.rect.x<((screen_width/2)-25):
-                    play.rect.x+=1
+                    play.rect.x+=3
                  elif play.rect.x>=((screen_width/2)-25):
                     if play.rect.y>((screen_height)-130):
                         play.rect.y-=1
                     elif play.rect.y<=((screen_height)-130):
                         shoot=True
-                        count3=1
+                        second_ship=False
     def enmey_shoot(self):
         if self.enmeys.sprites():
                random_alien = choice(self.enmeys.sprites())
-               bullet_sprite = BUllet(random_alien.rect.center)
-               self.enmey_bulet.add(bullet_sprite)
+               self.enmey_bulet.add(BUllet(random_alien.rect.center))
     def player_shoot(self):
         if self.player.sprites():
             for play in self.player.sprites():
                 if play.active:              
-                    bullet_sprite = BUllet((play.rect.center))
-                    self.player_bulet.add(bullet_sprite)
+                    self.player_bulet.add(BUllet((play.rect.center)))
         
     def shoot(self):
         for bullet in self.enmey_bulet.sprites():
-            bullet.rect.y+=5
+            bullet.rect.y+=9
         for bullet in self.player_bulet.sprites():
-            bullet.rect.y-=5
+            bullet.rect.y-=9
     def contact(self):
         global shoot
         for bullet in self.enmey_bulet.sprites():
@@ -105,14 +103,14 @@ class Game:
                 if bullet.rect.y+15>=play.rect.y:
                     for a in range(int(bullet.rect.x),int(bullet.rect.x+4)):
                         for b in range(int(play.rect.x),int(play.rect.x+50)):
-                            if a==b:
+                            if a==b and play.active:
                                 play.hit=True
                                 play.active=False
-                                bullet.kill()
                                 b+=(play.rect.x+51)
                                 a+=(bullet.rect.x+4)
-                    if bullet.rect.y>=screen_height-68:
-                        bullet.kill()
+                                bullet.kill()
+            if bullet.rect.y>=screen_height-68:
+                bullet.kill()
         for bullet in self.player_bulet.sprites():  
             for enmey in self.enmeys.sprites():
                 if bullet.rect.y<=enmey.rect.y:
@@ -132,7 +130,6 @@ class Game:
         self.enmey_bulet.draw(screen)
         self.player_bulet.draw(screen)
 game=Game()
-        
 #screen init
 pygame.init()
 screen = pygame.display.set_mode((screen_width, screen_height))
@@ -154,8 +151,7 @@ while running:
         game.add()
         count+=1
     if keys[pygame.K_SPACE]:
-        if (current_time-time)>=800:
-            print("hi")
+        if (current_time-time)>=800 and shoot:
             game.player_shoot()
             time=pygame.time.get_ticks()
        
@@ -166,4 +162,4 @@ while running:
     game.shoot()
     pygame.display.flip()
     clock.tick(60)# fps
-pygame.quit()
+pygame.quit()                         

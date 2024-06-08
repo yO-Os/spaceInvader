@@ -6,7 +6,7 @@ class Player(pygame.sprite.Sprite):
         self.y=y
         self.hit=hit
         self.active=active
-        file_path='sprites/player.png'
+        file_path='images/player.png'
         self.image = pygame.transform.scale(pygame.image.load(file_path).convert_alpha(),(50,40))
         self.rect=self.image.get_rect(topleft=(self.x,self.y))
     def destroy(self):
