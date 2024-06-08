@@ -3,17 +3,15 @@ from random import choice
 from player import Player
 from enmey import Enmey
 from bulet import BUllet
-count2=1#  Tells if the spaceship is hit
-count3=1
-first_ship,second_ship=False,False
+first_ship,second_ship=False,False# first_ship:- the ship in the arena & second_ship:- the reserve lives
 screen_height=700
 screen_width=800
-running=True
-shoot=True
-row=5
-column=5
-count=0
-time=pygame.time.get_ticks()
+running=True# Whether the program is running or not
+shoot=True# If it is able to shoot or not(space ship)
+row=5# Aliens
+column=5# Aliens
+count=0# helps start the game
+time=pygame.time.get_ticks()#  time when the game starts
 #  used to add game components and function to the game
 class Game:
 
