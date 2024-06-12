@@ -32,8 +32,10 @@ time=pygame.time.get_ticks()
 recharge_time=pygame.time.get_ticks()
 laser_sound = mixer.Sound("images/laser-gun.mp3")
 explosion_sound=mixer.Sound("images/explosion.mp3")
+background_sound=mixer.Sound("images/background-music.mp3")
 choose_ship=False
 ship_option='player'
+arrow='setting'
 help=False
 in_game=False
 font=pygame.font.SysFont('Arial',32)
@@ -52,6 +54,7 @@ crown=[ 'x  x  x',
         'xxxxxxx',
         'xxxxxxx']
 #  used to add game components and function to the game
+background_sound.play()
 class Game:
 
     global row ,column, screen,screen_width,screen_height,border2,border1,life,diamond,rectangle,num_enmeys,bullet_speed,ship_speed
@@ -71,10 +74,11 @@ class Game:
     def add(self,x_start=100,y_start=10):
         global bullet_speed,ship_speed,ship_height,ship_width
         if wave_1:
+            self.shape = diamond
             self.background.add(background(screen_width,screen_height))
-            self.player.add(Player((screen_width/2)-25,screen_height-130,False,True))#  The true value signifies the ship is in the arena
-            self.player.add(Player(0,screen_height-50,False,False))
-            self.player.add(Player(60,screen_height-50,False,False))
+            self.player.add(Player((screen_width/2)-25,screen_height-130,False,True,ship_option))#  The true value signifies the ship is in the arena
+            self.player.add(Player(0,screen_height-50,False,False,ship_option))
+            self.player.add(Player(60,screen_height-50,False,False,ship_option))
         elif wave_2:
             self.shape=rectangle
             ship_speed+=1
@@ -300,41 +304,104 @@ class Game:
 
         self.enmey_bulet.draw(screen)#displays the enmeys bullet
         self.player_bulet.draw(screen)#displays the players bullet
+game=Game()
 class Setting:
     global choose_ship
     def __init__(self):
         self.setting=pygame.sprite.Group()#  creates a group to add the enmey ship
         self.ship=pygame.sprite.Group()
+        self.music=pygame.sprite.Group()
     def add(self):
-        self.setting.add(Enmey((screen_width/2)-50,300,False,'setting',30,30))
+        self.setting.add(Enmey((screen_width/2)-50,300,False,arrow,30,30))
+        self.music.add(Enmey(screen_width-50,screen_height-50,False,arrow,30,30))
     def move(self):
         keyy=pygame.key.get_just_released()
         for setting in self.setting.sprites():
-            if keyy[pygame.K_w]  and setting.rect.y>300:
+            if keyy[pygame.K_w]  and (setting.rect.y>300 or count!=0) and setting.rect.y>250:
                 setting.rect.y-=50
             if keyy[pygame.K_s] and setting.rect.y<450:
                 setting.rect.y+=50
-            if keyy[pygame.K_a] and setting.rect.x>250 and choose_ship:
-                setting.rect.x-=100
-            if keyy[pygame.K_d] and setting.rect.x<450 and choose_ship:
-                setting.rect.x+=100
+            if keyy[pygame.K_a] and setting.rect.x>275 and choose_ship:
+                setting.rect.x-=200
+            if keyy[pygame.K_d] and setting.rect.x<675 and choose_ship:
+                setting.rect.x+=200
     def fun(self):
-        global in_game,help,choose_ship
+        global in_game,help,choose_ship,ship_option,arrow,running,count,num_enmeys,wave_1,wave_2,wave_3,wave_4,life,border1,border2
         keyy=pygame.key.get_just_released()
         if keyy[pygame.K_f]:
-            for setting in self.setting.sprites():
-                print("enter")
-                if setting.rect.y==300:
-                    in_game=True
-                elif setting.rect.y==350:
-                    help=True
-                elif setting.rect.y==400:
-                    choose_ship=True
+            if choose_ship:
+                choose_ship=False
+                
+                for setting in self.setting.sprites():
+                    if setting.rect.x==475:
+                        ship_option='player2'
+                        arrow='setting2'
+                    elif setting.rect.x==675:
+                        ship_option='player3'
+                        arrow='setting3'
+                    elif setting.rect.x==275:
+                        ship_option='player'
+                        arrow='setting'
+                    for new in game.enmeys.sprites():
+                        new.kill()
+                    for new in game.player.sprites():
+                        new.kill()
+                    for new in game.enmey_bulet.sprites():
+                        new.kill()
+                    for new in game.player_bulet.sprites():
+                        new.kill()
+                    for new in game.explosion.sprites():
+                        new.kill()
+                    count=0
+                    num_enmeys=9
+                    wave_1=True
+                    wave_2=False
+                    wave_3=False
+                    wave_4=False
+                    life=3
+                    border1=0
+                    border2=screen_width/2
                     setting.kill()
-                    self.ship.add(Enmey(300,300,False,'player',100,100))
-                    self.ship.add(Enmey(200,300,False,'player2',100,100))
-                    self.ship.add(Enmey(400,300,False,'player3',100,100))
-                    self.setting.add(Enmey(350,410,False,'player',30,30))
+                for ship in self.ship.sprites():
+                    ship.kill()
+                self.setting.add(Enmey((screen_width/2)-50,400,False,arrow,30,30))
+            else:
+                for setting in self.setting.sprites():
+                    print("enter")
+                    if setting.rect.y==250:
+                        for new in game.enmeys.sprites():
+                            new.kill()
+                        for new in game.player.sprites():
+                            new.kill()
+                        for new in game.enmey_bulet.sprites():
+                            new.kill()
+                        for new in game.player_bulet.sprites():
+                            new.kill()
+                        for new in game.explosion.sprites():
+                            new.kill()
+                        count=0
+                        in_game=True
+                        num_enmeys=9
+                        wave_1=True
+                        wave_2=False
+                        wave_3=False
+                        wave_4=False
+                        life=3
+                        border1=0
+                        border2=screen_width/2
+                    elif setting.rect.y==300:
+                        in_game=True
+                    elif setting.rect.y==350:
+                        help=True
+                    elif setting.rect.y==400:
+                        choose_ship=True
+                        setting.kill()
+                        self.ship.add(Enmey(200,300,False,'player',200,200))
+                        self.ship.add(Enmey(400,300,False,'player2',200,200))
+                        self.ship.add(Enmey(600,300,False,'player3',200,200))
+                        self.setting.add(Enmey(475,510,False,ship_option,50,50))
+                    elif setting.rect.y==450:
+                        running=False
                     
         if keyy[pygame.K_ESCAPE]:
             if help:
@@ -343,20 +410,22 @@ class Setting:
                 choose_ship=False
                 for settng in self.setting.sprites():
                     settng.kill()
-                self.setting.add(Enmey((screen_width/2)-50,400,False,'setting',30,30))
+                self.setting.add(Enmey((screen_width/2)-50,400,False,ship_option,30,30))
     def draw(self):
+        global count
         if help:
             screen.blit(font.render('press "a" to go left, "d" to go right and "space" to fire',True,(0,255,0)),(100,300))
-        if choose_ship:
+        elif choose_ship:
             self.setting.draw(screen)
             self.ship.draw(screen)
         else:
+            if count!=0:
+               screen.blit(font.render('retry',True,(0,255,0)),(screen_width/2,250)) 
             screen.blit(font.render('Play',True,(0,255,0)),(screen_width/2,300))
             screen.blit(font.render('help',True,(0,255,0)),(screen_width/2,350))
             screen.blit(font.render('ships',True,(0,255,0)),(screen_width/2,400))
             screen.blit(font.render('exit',True,(0,255,0)),(screen_width/2,450))
             self.setting.draw(screen)
-game=Game()
 setting_=Setting()
 #my_font = pygame.font.SysFont('Noto Sans Display', 50)
 #text_surface = my_font.render(str("Game over"), False, (255,255,255))
@@ -376,7 +445,7 @@ while running:
     for event in pygame.event.get():
         if event.type==pygame.QUIT :
             running=False
-        if event.type == ALIENLASER and shoot:
+        if event.type == ALIENLASER and shoot and in_game:
             if(life>0):
                 game.enmey_shoot()
     if in_game:
@@ -398,12 +467,14 @@ while running:
         if count==0:
             game.add()
             count+=1
-        if keys[pygame.K_SPACE]:
+        if keys[pygame.K_SPACE] and in_game:
             if (current_time-time)>=800 and shoot:
                 if(life>0):
                     game.player_shoot()
                     laser_sound.play()
                 time=pygame.time.get_ticks()
+        if keys[pygame.K_ESCAPE] and in_game:
+            in_game=False
         game.contact()
         game.player_move()
         if life>0:  
