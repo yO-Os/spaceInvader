@@ -6,7 +6,6 @@ from bulet import BUllet
 from bg import background
 from explosion import Explosion
 import pygame.mixer as mixer
-import gif_pygame
 mixer.init()
 pygame.font.init()
 first_ship,second_ship=False,False
@@ -36,6 +35,8 @@ background_sound=mixer.Sound("images/background-music.mp3")
 choose_ship=False
 ship_option='player'
 arrow='setting'
+unmute=True
+mute=False
 help=False
 in_game=False
 font=pygame.font.SysFont('Arial',32)
@@ -313,20 +314,28 @@ class Setting:
         self.music=pygame.sprite.Group()
     def add(self):
         self.setting.add(Enmey((screen_width/2)-50,300,False,arrow,30,30))
-        self.music.add(Enmey(screen_width-50,screen_height-50,False,arrow,30,30))
+        self.music.add(Enmey(screen_width-120,screen_height-120,False,'unmute',100,100))
     def move(self):
         keyy=pygame.key.get_just_released()
         for setting in self.setting.sprites():
-            if keyy[pygame.K_w]  and (setting.rect.y>300 or count!=0) and setting.rect.y>250:
+            if keyy[pygame.K_w]  and (setting.rect.y>300 or count!=0) and setting.rect.y>250 and setting.rect.y!=screen_height-75:
                 setting.rect.y-=50
             if keyy[pygame.K_s] and setting.rect.y<450:
                 setting.rect.y+=50
+            elif keyy[pygame.K_s] and setting.rect.y==450:
+                setting.rect.x=screen_width-160
+                setting.rect.y=screen_height-75
+            if keyy[pygame.K_w] and setting.rect.y==screen_height-75:
+                setting.rect.x=(screen_width/2)-50
+                setting.rect.y=450
             if keyy[pygame.K_a] and setting.rect.x>275 and choose_ship:
                 setting.rect.x-=200
             if keyy[pygame.K_d] and setting.rect.x<675 and choose_ship:
                 setting.rect.x+=200
+            
+                
     def fun(self):
-        global in_game,help,choose_ship,ship_option,arrow,running,count,num_enmeys,wave_1,wave_2,wave_3,wave_4,life,border1,border2
+        global in_game,help,choose_ship,ship_option,arrow,running,count,num_enmeys,wave_1,wave_2,wave_3,wave_4,life,border1,border2,mute,unmute
         keyy=pygame.key.get_just_released()
         if keyy[pygame.K_f]:
             if choose_ship:
@@ -402,7 +411,20 @@ class Setting:
                         self.setting.add(Enmey(475,510,False,ship_option,50,50))
                     elif setting.rect.y==450:
                         running=False
-                    
+                    elif setting.rect.y==screen_height-75 and unmute:
+                        for music in self.music.sprites():
+                            music.kill()
+                        self.music.add(Enmey(screen_width-120,screen_height-120,False,'mute',100,100))
+                        background_sound.stop()
+                        unmute=False
+                        mute=True
+                    elif setting.rect.y==screen_height-75 and mute:
+                        for music in self.music.sprites():
+                            music.kill()
+                        self.music.add(Enmey(screen_width-120,screen_height-120,False,'unmute',100,100))
+                        background_sound.play()
+                        unmute=True
+                        mute=False
         if keyy[pygame.K_ESCAPE]:
             if help:
                 help=False
@@ -426,12 +448,14 @@ class Setting:
             screen.blit(font.render('ships',True,(0,255,0)),(screen_width/2,400))
             screen.blit(font.render('exit',True,(0,255,0)),(screen_width/2,450))
             self.setting.draw(screen)
+            self.music.draw(screen)
 setting_=Setting()
 #my_font = pygame.font.SysFont('Noto Sans Display', 50)
 #text_surface = my_font.render(str("Game over"), False, (255,255,255))
 #screen init
 pygame.init()
 pygame.display.set_caption('Space Invader')
+pygame.display.set_icon(pygame.image.load('images/logo.jpg'))
 screen = pygame.display.set_mode((screen_width, screen_height))
 clock = pygame.time.Clock()
 ALIENLASER = pygame.USEREVENT + 1
