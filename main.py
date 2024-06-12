@@ -3,72 +3,125 @@ from random import choice
 from player import Player
 from enmey import Enmey
 from bulet import BUllet
+from bg import background
+from explosion import Explosion
+import pygame.mixer as mixer
+import gif_pygame
+mixer.init()
+pygame.font.init()
 first_ship,second_ship=False,False
-screen_height=700
-screen_width=800
+screen_height=800
+screen_width=1000
+wave_1=True
+wave_2=False
+wave_3=False
+wave_4=False
 running=True
 shoot=True
-row=5
-column=5
 count=0
+setting_count=0
 border1=0
-life=3
 border2=screen_width/2
+life=3
+bullet_speed=7
+num_enmeys=9
+ship_speed=1
+ship_width=50
+ship_height=40
 time=pygame.time.get_ticks()
+recharge_time=pygame.time.get_ticks()
+laser_sound = mixer.Sound("images/laser-gun.mp3")
+explosion_sound=mixer.Sound("images/explosion.mp3")
+huge_laser=True
+in_game=False
+font=pygame.font.SysFont('Arial',32)
+diamond=['  x',
+         ' x x',
+         'x x x',
+         ' x x',
+         '  x']
+rectangle=[ 'x x x x',
+            'x x x x',
+            'x x x x',
+            'x x x x',
+            'x x x x']
+crown=[ 'x  x  x',
+        'xxx xxx',
+        'xxxxxxx',
+        'xxxxxxx']
 #  used to add game components and function to the game
 class Game:
 
-    global row ,column, screen,screen_width,screen_height,border2,border1,life
+    global row ,column, screen,screen_width,screen_height,border2,border1,life,diamond,rectangle,num_enmeys,bullet_speed,ship_speed
     def __init__(self):
         self.enmeys=pygame.sprite.Group()#  creates a group to add the enmey ship
         self.enmey_bulet=pygame.sprite.Group()#  creates a group to add the enmey bullet
         self.player=pygame.sprite.Group()#  creates a group to add the player ship
         self.player_bulet=pygame.sprite.Group()#  creates a group to add the player bullet
+        self.background=pygame.sprite.Group()
+        self.explosion=pygame.sprite.Group()
+        self.shape = diamond
         #  bools that indicates the direction of the enmeys ship
         self.right=True
         self.left= False
 
 #  creates and adds the objects to their respective groups
-    def add(self):
-        self.player.add(Player((screen_width/2)-25,screen_height-130,False,True))#  The true value signifies the ship is in the arena
-        self.player.add(Player(0,screen_height-50,False,False))
-        self.player.add(Player(60,screen_height-50,False,False))
-        for y in range(1,row):
-            for x in range(1,column):
-                if y==1:self.enmeys.add(Enmey((x*60),(y*60),False,'green'))
-                elif y==2:self.enmeys.add(Enmey((x*60),(y*60),False,'yellow'))
-                elif y==3:self.enmeys.add(Enmey((x*60),(y*60),False,'red'))
-                elif y==4:self.enmeys.add(Enmey((x*60),(y*60),False,'blue'))
+    def add(self,x_start=100,y_start=10):
+        global bullet_speed,ship_speed,ship_height,ship_width
+        if wave_1:
+            self.background.add(background(screen_width,screen_height))
+            self.player.add(Player((screen_width/2)-25,screen_height-130,False,True))#  The true value signifies the ship is in the arena
+            self.player.add(Player(0,screen_height-50,False,False))
+            self.player.add(Player(60,screen_height-50,False,False))
+        elif wave_2:
+            self.shape=rectangle
+            ship_speed+=1
+            bullet_speed+=1
+        elif wave_3:
+            self.shape=crown
+            ship_speed+=1
+            bullet_speed+=1
+        if wave_4:
+            self.enmeys.add(Enmey(120,60,False,'extra',150,100))
+            ship_width=150
+            ship_height=100
+        else:
+            for row_index, row in enumerate(self.shape):
+                    for col_index , col in enumerate(row):
+                         if col == 'x':
+                              x = x_start +(col_index * 60)
+                              y = y_start + (row_index * 60)
+                              self.enmeys.add(Enmey(x,y,False,'green'))
 #  moves the enmey ships
     def enmey_move(self):
-
+        global num_enmeys,row
         #the loop is used to access each object in the enmey group
         for alien in self.enmeys.sprites():
-
-            #makes the enmey ship move to the right
-            if self.right:
-                    alien.rect.x += 1
-
-            #makes the enmey ship move to the left
+             #makes the enmey ship move to the right
+            if self.right :
+                 alien.rect.x += ship_speed
+             #makes the enmey ship move to the left
             elif self.left:
-                    alien.rect.x -= 1
-
-            #checkes if the ship in the most right ship reached the right of frame
+                 alien.rect.x -= ship_speed
+             #checkes if the ship in the most right ship reached the right of frame
             if alien.rect.right >= screen_width:
                  self.left=True
                  self.right=False
-
+                 for alien in self.enmeys.sprites():
+                    alien.rect.y += 20
             #checkes if the ship in the most left ship reached the left of frame
             elif alien.rect.left <= 0:
                  self.left=False
                  self.right=True
-
+                 for alien in self.enmeys.sprites():
+                    alien.rect.y += 20
             #kills the enmey ship that have been hit
             if (alien.hit):
                 alien.kill()
+                num_enmeys-=1
 #  moves the player ships
     def player_move(self):
-        global first_ship,second_ship,shoot,border2,border1#imports global variable for use
+        global first_ship,second_ship,shoot,border2,border1,ship_speed#imports global variable for use
         keys=pygame.key.get_pressed()#gets the key pressed from the keyboard
 
         #the loop is used to access each object in the player group
@@ -76,11 +129,11 @@ class Game:
 
             #checks if the player reached the left frame if it did't enables the ship to move to the left
             if keys[pygame.K_a] and play.rect.x-1>=0 and play.active and shoot:
-                play.rect.x-=2
+                play.rect.x-=ship_speed
 
             #checks if the player reached the right frame if it did't enables the ship to move to the right
             elif keys[pygame.K_d] and play.rect.x+51<=screen_width and play.active and shoot:
-                play.rect.x+=2
+                play.rect.x+=ship_speed
 
             #kills the player when hit
             if play.hit:
@@ -127,10 +180,22 @@ class Game:
                             second_ship=False
 #  no comment
     def enmey_shoot(self):
+        global charged,ship_height,ship_speed,ship_width,recharge_time,huge_laser,charge_sound
         if self.enmeys.sprites():
-               random_alien = choice(self.enmeys.sprites())#chooses random enmey to shoot the bullets
-               self.enmey_bulet.add(BUllet(random_alien.rect.center))#creates the bullet
-#            
+               if not(wave_4):
+                    random_alien = choice(self.enmeys.sprites())#chooses random enmey to shoot the bullets
+                    self.enmey_bulet.add(BUllet('images/enemy-laser.png',random_alien.rect.center))#creates the bullet
+                    laser_sound.play()
+               else:
+                    for alien in self.enmeys.sprites():
+                        self.enmey_bulet.add(BUllet('images/enemy-laser.png',(0,0),alien.rect.x+(ship_width/3)-10,alien.rect.y+ship_height,True))
+                        laser_sound.play()
+                        self.enmey_bulet.add(BUllet('images/enemy-laser.png',(0,0),alien.rect.x+(ship_width/2)+5,alien.rect.y+ship_height-30,True))
+                        laser_sound.play()
+                        self.enmey_bulet.add(BUllet('images/enemy-laser.png',(0,0),alien.rect.x+(ship_width)-30,alien.rect.y+ship_height,True))
+                        laser_sound.play()
+                                                                                     
+#      
     def player_shoot(self):
         if self.player.sprites():
 
@@ -139,14 +204,14 @@ class Game:
 
                 #checks if the player is on the field
                 if play.active:              
-                    self.player_bulet.add(BUllet((play.rect.center)))#creates the bullet
+                    self.player_bulet.add(BUllet('images/player-laser.png',play.rect.center))#creates the bullet
 #  moves the bullets
     def shoot(self):
-        global life
+        global life,laser_sound,bullet_speed
 
         #iterates through each enmey bullet
-        for bullet in self.enmey_bulet.sprites():            
-            bullet.rect.y+=9#  moves the bullets of the enmey
+        for bullet in self.enmey_bulet.sprites():           
+            bullet.rect.y+=bullet_speed#  moves the bullets of the enmey
 
         #checks if the player have used all its life
             if life==0:
@@ -156,10 +221,17 @@ class Game:
         #checks if the player have used all its life
             if life==0:
                 bullet.kill()#distroies the players bullet
-            bullet.rect.y-=9#  moves the bullets of the player
+            bullet.rect.y-=bullet_speed#  moves the bullets of the player
 #   checks bullet contact  
     def contact(self):
-        global shoot,life #imports global variable for use
+        global shoot,life,explosion_sound,current_time,num_enmeys,ship_width,ship_height #imports global variable for use
+        for exploded in self.explosion.sprites():
+            #explosion_sound.play()
+            if (exploded.num+2<4 and current_time-exploded.explosion_time>=500):
+                self.explosion.add(Explosion(exploded.num+2,exploded.rect.center))
+                exploded.kill()
+            elif exploded.num+2>4 and (current_time-exploded.explosion_time>500):
+                exploded.kill()
         #iterates through the enmeys bullet
         for bullet in self.enmey_bulet.sprites():
             #iterates through the player group
@@ -167,13 +239,13 @@ class Game:
                 if not(shoot):
                     bullet.kill()
                 #iterates through each point of the enmey bullets height
-                for height_bullet in range(bullet.rect.y,bullet.rect.y+16):
+                for height_bullet in range(bullet.rect.y,bullet.rect.y+bullet.bullet_height):
                     #iterates through each point of the player ships height
                     for height_player in range(play.rect.y,play.rect.y+50):
                         #checks if the bullet and the ship are on the same position vertically(y-axsis)
                         if height_bullet==height_player:
                             #iterates through each point of the enmey bullets width
-                            for a in range(int(bullet.rect.x),int(bullet.rect.x+4)):
+                            for a in range(int(bullet.rect.x),int(bullet.rect.x+bullet.bullet_width)):
                                 #iterates through each point of the player ships width
                                 for b in range(int(play.rect.x),int(play.rect.x+50)):
                                     #checks if the bullet and the ship are on the same position horizontally(x-axsis)
@@ -181,8 +253,12 @@ class Game:
                                         life-=1
                                         play.hit=True
                                         play.active=False
+                                        self.explosion.add(Explosion(1,play.rect.center))
+                                        for explod in self.explosion.sprites():
+                                            explod.called()
                                         b+=(play.rect.x+51)
                                         a+=(bullet.rect.x+4)
+                                        explosion_sound.play()
                                         bullet.kill()
             #prevents the bullet from passing the wall
             if bullet.rect.y>=screen_height-68:
@@ -191,18 +267,29 @@ class Game:
         for bullet in self.player_bulet.sprites():  
             for enmey in self.enmeys.sprites():
                 for height_p_bullet in range(bullet.rect.y,bullet.rect.y+16):
-                    for height_ship in range(enmey.rect.y,enmey.rect.y+50):
+                    for height_ship in range(enmey.rect.y,enmey.rect.y+ship_height):
                         if height_p_bullet==height_ship:
                             for c in range(int(bullet.rect.x),int(bullet.rect.x+4)):
-                                for d in range(int(enmey.rect.x),int(enmey.rect.x+50)):
+                                for d in range(int(enmey.rect.x),int(enmey.rect.x+ship_width)):
                                     if c==d:
-                                        enmey.hit=True
+                                        if not(wave_4):
+                                            enmey.hit=True
+                                        if wave_4 :
+                                            num_enmeys-=1
+                                            if num_enmeys==0:
+                                                enmey.hit=True
+                                        self.explosion.add(Explosion(1,enmey.rect.center))
+                                        for explod1 in self.explosion.sprites():
+                                            explod1.called()
+                                        explosion_sound.play()
                                         bullet.kill()
                                         d+=(enmey.rect.x+51)
                                         c+=(bullet.rect.x+4)
                             if bullet.rect.y<=0:
                                 bullet.kill()
     def draw(self):
+        self.background.draw(screen)
+        self.explosion.draw(screen)
         self.player.draw(screen)#displays the player ship
         self.enmeys.draw(screen)#displays the enmeys ship
         #displays the wall
@@ -211,7 +298,35 @@ class Game:
 
         self.enmey_bulet.draw(screen)#displays the enmeys bullet
         self.player_bulet.draw(screen)#displays the players bullet
+class Setting:
+    def __init__(self):
+        self.setting=pygame.sprite.Group()#  creates a group to add the enmey ship
+    def add(self):
+        self.setting.add(Enmey((screen_width/2)-50,300,False,'setting',30,30))
+    def move(self):
+        keyy=pygame.key.get_just_released()
+        for setting in self.setting.sprites():
+            if keyy[pygame.K_w]  and setting.rect.y>300:
+                setting.rect.y-=50
+            if keyy[pygame.K_s] and setting.rect.y<500:
+                setting.rect.y+=50
+    def fun(self):
+        global in_game
+        keyy=pygame.key.get_just_released()
+        if keyy[pygame.K_f]:
+            for setting in self.setting.sprites():
+                print("enter")
+                if setting.rect.y==300:
+                    in_game=True
+    def draw(self):
+        screen.blit(font.render('Play',True,(0,255,0)),(screen_width/2,300))
+        screen.blit(font.render('Setting',True,(0,255,0)),(screen_width/2,350))
+        screen.blit(font.render('help',True,(0,255,0)),(screen_width/2,400))
+        screen.blit(font.render('ships',True,(0,255,0)),(screen_width/2,450))
+        screen.blit(font.render('exit',True,(0,255,0)),(screen_width/2,500))
+        self.setting.draw(screen)
 game=Game()
+setting_=Setting()
 #my_font = pygame.font.SysFont('Noto Sans Display', 50)
 #text_surface = my_font.render(str("Game over"), False, (255,255,255))
 #screen init
@@ -233,22 +348,46 @@ while running:
         if event.type == ALIENLASER and shoot:
             if(life>0):
                 game.enmey_shoot()
-    if count==0:
-        game.add()
-        count+=1
-    if keys[pygame.K_SPACE]:
-        if (current_time-time)>=800 and shoot:
-            if(life>0):
-                game.player_shoot()
-            time=pygame.time.get_ticks()
-    if life>0:  
+    if in_game:
+        if wave_1 and num_enmeys==0:
+            wave_1=False
+            wave_2=True
+            num_enmeys=20
+            count-=1
+        elif wave_2 and num_enmeys==0:
+            wave_2=False
+            wave_3=True
+            num_enmeys=23
+            count-=1
+        elif wave_3 and num_enmeys==0:
+            wave_3=False
+            wave_4=True
+            num_enmeys=30
+            count-=1
+        if count==0:
+            game.add()
+            count+=1
+        if keys[pygame.K_SPACE]:
+            if (current_time-time)>=800 and shoot:
+                if(life>0):
+                    game.player_shoot()
+                    laser_sound.play()
+                time=pygame.time.get_ticks()
         game.contact()
         game.player_move()
-        game.enmey_move()
+        if life>0:  
+            game.enmey_move()
         game.shoot()
-    #else:
-        #screen.blit(text_surface, ((screen_width/2),0))
-    game.draw()
+        #else:
+            #screen.blit(text_surface, ((screen_width/2),0))
+        game.draw()
+    else:
+        if setting_count==0:
+            setting_.add()
+            setting_count+=1
+        setting_.draw()
+        setting_.move()
+        setting_.fun()
     pygame.display.flip()
     clock.tick(60)# fps
 pygame.quit()                         
