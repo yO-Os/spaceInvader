@@ -7,21 +7,22 @@ from bg import background
 from explosion import Explosion
 from bar import Bar
 import pygame.mixer as mixer
+#################################################################################################################################
 mixer.init()
 pygame.font.init()
-first_ship,second_ship=False,False
-screen_height=800
-screen_width=1000
-wave_1=True
-wave_2=False
-wave_3=False
-wave_4=False
-running=True
-shoot=True
-count=0
-setting_count=0
-border1=0
-border2=screen_width/2
+first_ship,second_ship=False,False###used to control the extra ships outside the field
+screen_height=800#####used to set the screen size
+screen_width=1000#####
+wave_1=True#########
+wave_2=False       ########boolian values used to control the waves
+wave_3=False       ########
+wave_4=False########
+running=True####used to for the game loop
+shoot=True###used to enable and disable shooting
+count=0###used to count the loop when the game stars
+setting_count=0###used to count the loop when it's on the home page
+border1=0###used to indcate where the first door is placed
+border2=screen_width/2###used to indcate where the second door is placed
 life=3
 bullet_speed=7
 num_enmeys=9
@@ -60,15 +61,14 @@ diamond=['  x',
          '  x']
 rectangle=[ 'x x x x',
             'x x x x',
-            'x x x x',
-            'x x x x',
             'x x x x']
 crown=[ 'x  x  x',
         'xxx xxx',
-        'xxxxxxx',
         'xxxxxxx']
-#  used to add game components and function to the game
+#################################################################################################################################
+
 background_sound.play()
+#  used to add game components and function to the game
 class Game:
 
     global row ,column, screen,screen_width,screen_height,border2,border1,life,diamond,rectangle,num_enmeys,bullet_speed,ship_speed
@@ -85,7 +85,7 @@ class Game:
         #  bools that indicates the direction of the enmeys ship
         self.right=True
         self.left= False
-
+#################################################################################################################################
 #  creates and adds the objects to their respective groups
     def add(self,x_start=100,y_start=10):
         global bullet_speed,ship_speed,ship_height,ship_width
@@ -116,6 +116,7 @@ class Game:
                               x = x_start +(col_index * 60)
                               y = y_start + (row_index * 60)
                               self.enmeys.add(Enmey(x,y,False,'green'))
+#################################################################################################################################
 #  moves the enmey ships
     def enmey_move(self):
         global num_enmeys,row
@@ -148,6 +149,7 @@ class Game:
                     alien.hit=False 
                     if num_enmeys==0:
                         alien.kill()
+#################################################################################################################################
 #  moves the player ships
     def player_move(self):
         global first_ship,second_ship,shoot,border2,border1,ship_speed,recharge_time,current_time#imports global variable for use
@@ -227,6 +229,7 @@ class Game:
                         else:
                             shoot=True
                             second_ship=False
+#################################################################################################################################
 #  no comment
     def enmey_shoot(self):
         global charged,ship_height,ship_speed,ship_width,huge_laser,charge_sound
@@ -243,7 +246,7 @@ class Game:
                         laser_sound.play()
                         self.enmey_bulet.add(BUllet('images/enemy-laser.png',(0,0),alien.rect.x+(ship_width)-30,alien.rect.y+ship_height,True))
                         laser_sound.play()                                                                                  
-#      
+##################################################################################################################################      
     def player_shoot(self):
         if self.player.sprites():
             #the loop is used to access each object in the player group
@@ -252,7 +255,8 @@ class Game:
                 #checks if the player is on the field
                 if play.active:              
                     self.player_bulet.add(BUllet('images/player-laser.png',play.rect.center))#creates the bullet
-#  moves the bullets
+#################################################################################################################################
+#   moves the bullets
     def shoot(self):
         global life,laser_sound,bullet_speed
 
@@ -269,6 +273,7 @@ class Game:
             if life==0:
                 bullet.kill()#distroies the players bullet
             bullet.rect.y-=bullet_speed#  moves the bullets of the player
+#################################################################################################################################
 #   checks bullet contact  
     def contact(self):
         global shoot,life,explosion_sound,current_time,num_enmeys,ship_width,ship_height #imports global variable for use
@@ -330,6 +335,7 @@ class Game:
                                         c+=(bullet.rect.x+4)
                             if bullet.rect.y<=0:
                                 bullet.kill()
+    #################################################################################################################################
     def draw(self):
         self.background.draw(screen)
         self.explosion.draw(screen)
@@ -345,16 +351,21 @@ class Game:
         self.process_bar.draw(screen)
 
 game=Game()
+#################################################################################################################################
 class Setting:
     global choose_ship
     def __init__(self):
-        self.setting=pygame.sprite.Group()#  creates a group to add the enmey ship
+        self.setting=pygame.sprite.Group()#  creates a group to add the ship to navigate through home page
         self.ship=pygame.sprite.Group()
         self.bullet=pygame.sprite.Group()
         self.music=pygame.sprite.Group()
+        self.menu_bg=pygame.sprite.Group()
+    #################################################################################################################################
     def add(self):
         self.setting.add(Enmey((screen_width/2)-50,300,False,arrow,30,30))
+        self.menu_bg.add(background(screen_width,screen_height,'menu'))
         self.music.add(Enmey(screen_width-120,screen_height-120,False,'unmute',100,100))
+    #################################################################################################################################
     def move(self):
         keyy=pygame.key.get_just_released()
         kyy=pygame.key.get_pressed()
@@ -387,6 +398,7 @@ class Setting:
                 setting.rect.x+=2
             if keyy[pygame.K_SPACE] and setting.rect.x+2<screen_width and help:
                 self.bullet.add(BUllet('images/player-laser.png',setting.rect.center))              
+   #################################################################################################################################
     def fun(self):
         global in_game,help,choose_ship,ship_option,arrow,running,count,num_enmeys,wave_1,wave_2,wave_3,wave_4,life,border1,border2,mute,unmute
         keyy=pygame.key.get_just_released()
@@ -502,8 +514,10 @@ class Setting:
                 for settng in self.setting.sprites():
                     settng.kill()
                 self.setting.add(Enmey((screen_width/2)-50,400,False,arrow,30,30))
+    #################################################################################################################################
     def draw(self):
         global count,play_color,help_color,ship_color,exit_color,retry_color,play_pos,help_pos,ship_pos,exit_pos,retry_pos
+        self.menu_bg.draw(screen)
         for setting in self.setting.sprites():
             if setting.rect.y==250:
                 play_color,help_color,ship_color,exit_color=(0,255,0),(0,255,0),(0,255,0),(0,255,0) 
@@ -554,7 +568,7 @@ class Setting:
             self.music.draw(screen)
 
 setting_=Setting()
-
+#################################################################################################################################
 pygame.init()
 pygame.display.set_caption('Space Invader')
 pygame.display.set_icon(pygame.image.load('images/logo.jpg'))
@@ -562,7 +576,7 @@ screen = pygame.display.set_mode((screen_width, screen_height))
 clock = pygame.time.Clock()
 ALIENLASER = pygame.USEREVENT + 1
 pygame.time.set_timer(ALIENLASER,800)
-
+#################################################################################################################################
 #game loop
 while running:
     keys=pygame.key.get_pressed()
@@ -578,12 +592,12 @@ while running:
         if wave_1 and num_enmeys==0:
             wave_1=False
             wave_2=True
-            num_enmeys=20
+            num_enmeys=12
             count-=1
         elif wave_2 and num_enmeys==0:
             wave_2=False
             wave_3=True
-            num_enmeys=23
+            num_enmeys=16
             count-=1
         elif wave_3 and num_enmeys==0:
             wave_3=False
