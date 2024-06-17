@@ -36,6 +36,7 @@ recharge_time=pygame.time.get_ticks()
 laser_sound = mixer.Sound("images/laser-gun.mp3")
 explosion_sound=mixer.Sound("images/explosion.mp3")
 background_sound=mixer.Sound("images/background-music.mp3")
+wave_start_time=pygame.time.get_ticks()
 choose_ship=False
 ship_option='player'
 arrow='setting'
@@ -383,7 +384,40 @@ class Game:
         self.player_bulet.draw(screen)#displays the players bullet
         self.shield.draw(screen)
         self.process_bar.draw(screen)
-
+        if life==0:
+            screen.blit(font.render('GAMEOVER',True,(255,0,0)),((screen_width/2)-100,(screen_height/2)-100))
+            screen.blit(font.render('press "R" to restart, "ESC" to pause',True,(255,255,255)),((screen_width/2)-100,(screen_height/2)-50))
+        if current_time- wave_start_time<1000:
+            if wave_1:
+                screen.blit(font.render('Wave 1',True,(255,255,255)),(screen_width/2,0))
+            if wave_2:
+                screen.blit(font.render('Wave 2',True,(255,255,255)),(screen_width/2,0))
+            if wave_3:
+                screen.blit(font.render('Wave 3',True,(255,255,255)),(screen_width/2,0))
+            if wave_4:
+                screen.blit(font.render('Wave 1',True,(255,255,255)),(screen_width/2,0))
+    def restart(self):
+        global count,in_game,num_enmeys,wave_1,wave_2,wave_3,wave_4,life,border1,border2
+        for new in self.enmeys.sprites():
+            new.kill()
+        for new in self.player.sprites():
+            new.kill()
+        for new in self.enmey_bulet.sprites():
+            new.kill()
+        for new in self.player_bulet.sprites():
+            new.kill()
+        for new in self.explosion.sprites():
+            new.kill()
+        count=0
+        in_game=True
+        num_enmeys=9
+        wave_1=True
+        wave_2=False
+        wave_3=False
+        wave_4=False
+        life=3
+        border1=0
+        border2=screen_width/2
 game=Game()
 #################################################################################################################################
 class Setting:
@@ -401,7 +435,7 @@ class Setting:
         self.music.add(Enmey(screen_width-120,screen_height-120,False,'unmute',100,100))
     #################################################################################################################################
     def move(self):
-        keyy=pygame.key.get_just_released()
+        # keyy=pygame.key.get_just_released()
         kyy=pygame.key.get_pressed()
         # Get mouse position
         mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -409,6 +443,7 @@ class Setting:
         for bullet in self.bullet:
             bullet.rect.y-=6
         for setting in self.setting.sprites():
+             #moves the arrow while in homepage
             if mouse_y>=250 and mouse_y<300 and count!=0 and not(help) and not(choose_ship):
                 setting.rect.x=(screen_width/2)-100
                 setting.rect.y=250
@@ -427,37 +462,43 @@ class Setting:
             if mouse_y>550 and mouse_x>=screen_height-100:
                 setting.rect.x=screen_width-160
                 setting.rect.y=screen_height-75
+
+            #moves the arrow when choosing the ship
             if mouse_x>=275 and mouse_x<475 and not(help) and choose_ship:
                 setting.rect.x=275
             if mouse_x>=475 and mouse_x<675 and not(help) and choose_ship:
                 setting.rect.x=475
             if mouse_x>=675 and mouse_x<875 and not(help) and choose_ship:
                 setting.rect.x=675
-            if keyy[pygame.K_w]  and (setting.rect.y>300 or count!=0) and setting.rect.y>250 and setting.rect.y!=screen_height-75:
-                navigate.play()
-                setting.rect.y-=50
-            if keyy[pygame.K_s] and setting.rect.y<450:
-                navigate.play()
-                setting.rect.y+=50
-            elif keyy[pygame.K_s] and setting.rect.y==450:
-                navigate.play()
-                setting.rect.x=screen_width-160
-                setting.rect.y=screen_height-75
-            if keyy[pygame.K_w] and setting.rect.y==screen_height-75:
-                navigate.play()
-                setting.rect.x=(screen_width/2)-100
-                setting.rect.y=450
-            if keyy[pygame.K_a] and setting.rect.x>275 and choose_ship:
-                navigate.play()
-                setting.rect.x-=200
-            if keyy[pygame.K_d] and setting.rect.x<675 and choose_ship:
-                navigate.play()
-                setting.rect.x+=200
+
+            
+            # if keyy[pygame.K_w]  and (setting.rect.y>300 or count!=0) and setting.rect.y>250 and setting.rect.y!=screen_height-75:
+            #     navigate.play()
+            #     setting.rect.y-=50
+            # if keyy[pygame.K_s] and setting.rect.y<450:
+            #     navigate.play()
+            #     setting.rect.y+=50
+            # elif keyy[pygame.K_s] and setting.rect.y==450:
+            #     navigate.play()
+            #     setting.rect.x=screen_width-160
+            #     setting.rect.y=screen_height-75
+            # if keyy[pygame.K_w] and setting.rect.y==screen_height-75:
+            #     navigate.play()
+            #     setting.rect.x=(screen_width/2)-100
+            #     setting.rect.y=450
+            # if keyy[pygame.K_a] and setting.rect.x>275 and choose_ship:
+            #     navigate.play()
+            #     setting.rect.x-=200
+            # if keyy[pygame.K_d] and setting.rect.x<675 and choose_ship:
+            #     navigate.play()
+            #     setting.rect.x+=200
+
+             #moves the ship while in help menu
             if kyy[pygame.K_a] and setting.rect.x-2>0 and help:
                 setting.rect.x-=2
             if kyy[pygame.K_d] and setting.rect.x+2<screen_width and help:
                 setting.rect.x+=2
-            if keyy[pygame.K_SPACE] and setting.rect.x+2<screen_width and help:
+            if kyy[pygame.K_SPACE] and setting.rect.x+2<screen_width and help:
                 self.bullet.add(BUllet('images/player-laser.png',setting.rect.center))              
    #################################################################################################################################
     def fun(self):
@@ -481,25 +522,7 @@ class Setting:
                             select.play()
                             ship_option='player'
                             arrow='setting'
-                        for new in game.enmeys.sprites():
-                            new.kill()
-                        for new in game.player.sprites():
-                            new.kill()
-                        for new in game.enmey_bulet.sprites():
-                            new.kill()
-                        for new in game.player_bulet.sprites():
-                            new.kill()
-                        for new in game.explosion.sprites():
-                            new.kill()
-                        count=0
-                        num_enmeys=9
-                        wave_1=True
-                        wave_2=False
-                        wave_3=False
-                        wave_4=False
-                        life=3
-                        border1=0
-                        border2=screen_width/2
+                        game.restart()
                         setting.kill()
                     for ship in self.ship.sprites():
                         ship.kill()
@@ -508,26 +531,7 @@ class Setting:
                 for setting in self.setting.sprites():
                     if setting.rect.y==250:
                         select.play()
-                        for new in game.enmeys.sprites():
-                            new.kill()
-                        for new in game.player.sprites():
-                            new.kill()
-                        for new in game.enmey_bulet.sprites():
-                            new.kill()
-                        for new in game.player_bulet.sprites():
-                            new.kill()
-                        for new in game.explosion.sprites():
-                            new.kill()
-                        count=0
-                        in_game=True
-                        num_enmeys=9
-                        wave_1=True
-                        wave_2=False
-                        wave_3=False
-                        wave_4=False
-                        life=3
-                        border1=0
-                        border2=screen_width/2
+                        game.restart()
                     elif setting.rect.y==300:
                         select.play()
                         in_game=True
@@ -623,7 +627,7 @@ class Setting:
             self.ship.draw(screen)
         else:
             if count!=0:
-               screen.blit(font.render('retry',True,retry_color),(retry_pos,250)) 
+               screen.blit(font.render('restart',True,retry_color),(retry_pos,250)) 
             screen.blit(font.render('Play',True,play_color),(play_pos,300))
             screen.blit(font.render('help',True,help_color),(help_pos,350))
             screen.blit(font.render('ships',True,ship_color),(ship_pos,400))
@@ -649,49 +653,55 @@ while running:
     for event in pygame.event.get():
         if event.type==pygame.QUIT :
             running=False
-        if event.type == ALIENLASER and shoot and in_game:
+        if event.type == ALIENLASER and shoot and in_game and current_time- wave_start_time>=1000:
             if(life>0):
                 game.enmey_shoot()
         if event.type == pygame.MOUSEBUTTONDOWN:
                 selected=True
     if in_game:
-        if wave_1 and num_enmeys==0:
-            wave_1=False
-            wave_2=True
-            num_enmeys=12
-            count-=1
-        elif wave_2 and num_enmeys==0:
-            wave_2=False
-            wave_3=True
-            num_enmeys=16
-            count-=1
-        elif wave_3 and num_enmeys==0:
-            wave_3=False
-            wave_4=True
-            num_enmeys=30
-            count-=1
-        if count==0:
-            game.add()
-            count+=1
-            recharge_time=pygame.time.get_ticks()
-        if keys[pygame.K_SPACE] and in_game:
-            if (current_time-time)>=800 and shoot:
-                if(life>0):
-                    game.player_shoot()
-                    laser_sound.play()
-                time=pygame.time.get_ticks()
-        if keys[pygame.K_RSHIFT] and in_game and  current_time-recharge_time>=5000:
-            # recharge_time=pygame.time.get_ticks()
-            shield_active=True
-        if keys[pygame.K_ESCAPE] and in_game:
-            in_game=False
-        game.contact()
+        if current_time- wave_start_time>=1000:
+            if wave_1 and num_enmeys==0:
+                wave_1=False
+                wave_2=True
+                num_enmeys=12
+                count-=1
+                wave_start_time=pygame.time.get_ticks()
+            elif wave_2 and num_enmeys==0:
+                wave_2=False
+                wave_3=True
+                num_enmeys=16
+                count-=1
+                wave_start_time=pygame.time.get_ticks()
+            elif wave_3 and num_enmeys==0:
+                wave_3=False
+                wave_4=True
+                num_enmeys=30
+                count-=1
+                wave_start_time=pygame.time.get_ticks()
+            if count==0:
+                game.add()
+                count+=1
+                recharge_time=pygame.time.get_ticks()
+                wave_start_time=pygame.time.get_ticks()
+            if keys[pygame.K_SPACE] and in_game:
+                if (current_time-time)>=800 and shoot:
+                    if(life>0):
+                        game.player_shoot()
+                        laser_sound.play()
+                    time=pygame.time.get_ticks()
+            if keys[pygame.K_r] and in_game:
+                game.restart()
+            if keys[pygame.K_RSHIFT] and in_game and  current_time-recharge_time>=5000:
+                # recharge_time=pygame.time.get_ticks()
+                shield_active=True
+            if keys[pygame.K_ESCAPE] and in_game:
+                in_game=False
+            game.contact()
+            game.shoot() 
+        
         game.player_move()
         if life>0:  
             game.enmey_move()
-        game.shoot()
-        #else:
-            #screen.blit(text_surface, ((screen_width/2),0))
         game.draw()
     else:
         if setting_count==0:
