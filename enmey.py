@@ -4,6 +4,8 @@ class Enmey(pygame.sprite.Sprite):
         super().__init__()
         self.x=x
         self.y=y
+        self.height=height
+        self.width=width
         self.hit=hit
         self.left=True
         self.right=False

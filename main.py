@@ -19,11 +19,13 @@ wave_3=False       ########
 wave_4=False########
 running=True####used to for the game loop
 shoot=True###used to enable and disable shooting
+shield_active=False
 count=0###used to count the loop when the game stars
 setting_count=0###used to count the loop when it's on the home page
 border1=0###used to indcate where the first door is placed
 border2=screen_width/2###used to indcate where the second door is placed
 life=3
+selected=False
 bullet_speed=7
 num_enmeys=9
 ship_speed=1
@@ -49,11 +51,11 @@ help_color=(0,255,0)
 ship_color=(0,255,0)
 exit_color=(0,255,0)
 retry_color=(0,255,0)
-play_pos=screen_width/2
-help_pos=screen_width/2
-ship_pos=screen_width/2
-exit_pos=screen_width/2
-retry_pos=screen_width/2
+play_pos=(screen_width/2)-50
+help_pos=(screen_width/2)-50
+ship_pos=(screen_width/2)-50
+exit_pos=(screen_width/2)-50
+retry_pos=(screen_width/2)-50
 diamond=['  x',
          ' x x',
          'x x x',
@@ -77,10 +79,10 @@ class Game:
         self.enmey_bulet=pygame.sprite.Group()#  creates a group to add the enmey bullet
         self.player=pygame.sprite.Group()#  creates a group to add the player ship
         self.player_bulet=pygame.sprite.Group()#  creates a group to add the player bullet
-        self.background=pygame.sprite.Group()
-        self.explosion=pygame.sprite.Group()
-        self.shield=pygame.sprite.Group()
-        self.process_bar=pygame.sprite.Group()
+        self.background=pygame.sprite.Group()#  creates a group to add the background
+        self.explosion=pygame.sprite.Group()#  creates a group to add the explosin
+        self.shield=pygame.sprite.Group()#  creates a group to add the shield
+        self.process_bar=pygame.sprite.Group()#  creates a group to add the progress bar
         self.shape = diamond
         #  bools that indicates the direction of the enmeys ship
         self.right=True
@@ -128,13 +130,13 @@ class Game:
              #makes the enmey ship move to the left
             elif self.left:
                  alien.rect.x -= ship_speed
-             #checkes if the ship in the most right ship reached the right of frame
+             #checkes if the ship in the most right ship reached the right of the frame
             if alien.rect.right >= screen_width:
                  self.left=True
                  self.right=False
                  for alien in self.enmeys.sprites():
                     alien.rect.y += 20
-            #checkes if the ship in the most left ship reached the left of frame
+            #checkes if the ship in the most left ship reached the left of the frame
             elif alien.rect.left <= 0:
                  self.left=False
                  self.right=True
@@ -152,40 +154,54 @@ class Game:
 #################################################################################################################################
 #  moves the player ships
     def player_move(self):
-        global first_ship,second_ship,shoot,border2,border1,ship_speed,recharge_time,current_time#imports global variable for use
-        keys=pygame.key.get_pressed()#gets the key pressed from the keyboard
-        #the loop is used to access each object in the player group
-        if current_time-recharge_time<=2000:
-            print(current_time-recharge_time)
-            if current_time-recharge_time<=500:
+        global first_ship,second_ship,shoot,border2,border1,ship_speed,recharge_time,current_time,shield_active
+        keys=pygame.key.get_pressed()
+        #progress bar
+        if current_time-recharge_time<=5000:
+            if current_time-recharge_time<=1000:
                for bar in self.process_bar.sprites():
                    bar.kill()
                self.process_bar.add(Bar()) 
-            elif current_time-recharge_time>500 and current_time-recharge_time<=1000:
+            elif current_time-recharge_time>1000 and current_time-recharge_time<=2000:
                for bar in self.process_bar.sprites():
                    bar.kill()
                for x in range(1,3):
                    self.process_bar.add(Bar((50*x)+(screen_width-300)))
-            elif current_time-recharge_time>1000 and current_time-recharge_time<=1500:
+            elif current_time-recharge_time>2000 and current_time-recharge_time<=3000:
                for bar in self.process_bar.sprites():
                    bar.kill()
                for x in range(1,4):
                    self.process_bar.add(Bar((50*x)+(screen_width-300)))
-            elif current_time-recharge_time>1500 and current_time-recharge_time<=2000:
+            elif current_time-recharge_time>3000 and current_time-recharge_time<=4000:
                for bar in self.process_bar.sprites():
                    bar.kill()
                for x in range(1,5):
+                   self.process_bar.add(Bar((50*x)+(screen_width-300),750))
+            elif current_time-recharge_time>4000 and current_time-recharge_time<=5000:
+               for bar in self.process_bar.sprites():
+                   bar.kill()
+               for x in range(1,6):
                    self.process_bar.add(Bar((50*x)+(screen_width-300),750,(0,255,0)))
+       #creates shield
+        if shield_active:
+            shield_active=False
+            for play in self.player.sprites():
+                if play.active:
+                    self.shield.add(Enmey(play.rect.x,play.rect.y-10,True,'enabled-shield',50,10))
         for play in self.player.sprites():
-
             #checks if the player reached the left frame if it did't enables the ship to move to the left
             if keys[pygame.K_a] and play.rect.x-1>=0 and play.active and shoot:
                 play.rect.x-=ship_speed
+                for shild in self.shield.sprites():
+                    if shild.hit:
+                        shild.rect.x=play.rect.x
 
             #checks if the player reached the right frame if it did't enables the ship to move to the right
             elif keys[pygame.K_d] and play.rect.x+51<=screen_width and play.active and shoot:
                 play.rect.x+=ship_speed
-
+                for shild in self.shield.sprites():
+                    if shild.hit:
+                        shild.rect.x=play.rect.x
             #kills the player when hit
             if play.hit:
                  play.destroy()
@@ -251,7 +267,6 @@ class Game:
         if self.player.sprites():
             #the loop is used to access each object in the player group
             for play in self.player.sprites():
-
                 #checks if the player is on the field
                 if play.active:              
                     self.player_bulet.add(BUllet('images/player-laser.png',play.rect.center))#creates the bullet
@@ -276,15 +291,35 @@ class Game:
 #################################################################################################################################
 #   checks bullet contact  
     def contact(self):
-        global shoot,life,explosion_sound,current_time,num_enmeys,ship_width,ship_height #imports global variable for use
-        for exploded in self.explosion.sprites():
-            
+        global shoot,life,explosion_sound,current_time,num_enmeys,ship_width,ship_height ,recharge_time
+        for exploded in self.explosion.sprites():           
             if (exploded.num+2<4 and current_time-exploded.explosion_time>=500):
                 self.explosion.add(Explosion(exploded.num+2,exploded.rect.center))
                 exploded.kill()
             elif exploded.num+2>4 and (current_time-exploded.explosion_time>500):
                 exploded.kill()
-        #iterates through the enmeys bullet
+        #checks contact b/n enmeys bullet and players shield
+        for bullet in self.enmey_bulet.sprites():
+                #iterates through each point of the enmey bullets height
+            for shield in self.shield.sprites():
+                for height_bullet in range(bullet.rect.y,bullet.rect.y+bullet.bullet_height):
+                    for height_shield in range(shield.rect.y,shield.rect.y+shield.height):
+                        #checks if the bullet and the ship are on the same position vertically(y-axsis)
+                        if height_bullet==height_shield:
+                            #iterates through each point of the enmey bullets width
+                            for width_bullet in range(int(bullet.rect.x),int(bullet.rect.x+bullet.bullet_width)):
+                                #iterates through each point of the player ships width
+                                for width_shield in range(int(shield.rect.x),int(shield.rect.x+shield.width)):
+                                    #checks if the bullet and the ship are on the same position horizontally(x-axsis)
+                                    if width_bullet==width_shield:
+                                        for shield in self.shield.sprites():
+                                            if shield.hit:
+                                                shield.kill()
+                                                recharge_time=pygame.time.get_ticks()
+                                        bullet.kill()
+                                        width_shield+=(shield.rect.x+51)
+                                        width_bullet+=(bullet.rect.x+4)
+        #checks contact b/n enmeys bullet and players ship
         for bullet in self.enmey_bulet.sprites():
             #iterates through the player group
             for play in self.player.sprites():
@@ -297,42 +332,41 @@ class Game:
                         #checks if the bullet and the ship are on the same position vertically(y-axsis)
                         if height_bullet==height_player:
                             #iterates through each point of the enmey bullets width
-                            for a in range(int(bullet.rect.x),int(bullet.rect.x+bullet.bullet_width)):
+                            for bullet_width in range(int(bullet.rect.x),int(bullet.rect.x+bullet.bullet_width)):
                                 #iterates through each point of the player ships width
-                                for b in range(int(play.rect.x),int(play.rect.x+50)):
+                                for player_width in range(int(play.rect.x),int(play.rect.x+50)):
                                     #checks if the bullet and the ship are on the same position horizontally(x-axsis)
-                                    if a==b and play.active:
+                                    if bullet_width==player_width and play.active:
                                         life-=1
                                         play.hit=True
                                         play.active=False
                                         self.explosion.add(Explosion(1,play.rect.center))
                                         for explod in self.explosion.sprites():
                                             explod.called()
-                                        b+=(play.rect.x+51)
-                                        a+=(bullet.rect.x+4)
+                                        player_width+=(play.rect.x+51)
+                                        bullet_width+=(bullet.rect.x+4)
                                         explosion_sound.play()
                                         bullet.kill()
             #prevents the bullet from passing the wall
             if bullet.rect.y>=screen_height-68:
                 bullet.kill()
-        #does the same thing as the above loop but it checks if the enmey ship is hit
+        #checks contact b/n players bullet and enmeys ship
         for bullet in self.player_bulet.sprites():  
             for enmey in self.enmeys.sprites():
-                for height_p_bullet in range(bullet.rect.y,bullet.rect.y+16):
+                for height_p_bullet in range(bullet.rect.y,bullet.rect.y+bullet.bullet_height):
                     for height_ship in range(enmey.rect.y,enmey.rect.y+ship_height):
                         if height_p_bullet==height_ship:
-                            for c in range(int(bullet.rect.x),int(bullet.rect.x+4)):
-                                for d in range(int(enmey.rect.x),int(enmey.rect.x+ship_width)):
-                                    if c==d:
-                                        
+                            for bullet_width in range(int(bullet.rect.x),int(bullet.rect.x+bullet.bullet_width)):
+                                for enmey_width in range(int(enmey.rect.x),int(enmey.rect.x+ship_width)):
+                                    if bullet_width==enmey_width:                                       
                                         enmey.hit=True
                                         self.explosion.add(Explosion(1,enmey.rect.center))
                                         for explod1 in self.explosion.sprites():
                                             explod1.called()
                                         explosion_sound.play()
                                         bullet.kill()
-                                        d+=(enmey.rect.x+51)
-                                        c+=(bullet.rect.x+4)
+                                        enmey_width+=(enmey.rect.x+51)
+                                        bullet_width+=(bullet.rect.x+4)
                             if bullet.rect.y<=0:
                                 bullet.kill()
     #################################################################################################################################
@@ -362,16 +396,43 @@ class Setting:
         self.menu_bg=pygame.sprite.Group()
     #################################################################################################################################
     def add(self):
-        self.setting.add(Enmey((screen_width/2)-50,300,False,arrow,30,30))
+        self.setting.add(Enmey((screen_width/2)-100,300,False,arrow,30,30))
         self.menu_bg.add(background(screen_width,screen_height,'menu'))
         self.music.add(Enmey(screen_width-120,screen_height-120,False,'unmute',100,100))
     #################################################################################################################################
     def move(self):
         keyy=pygame.key.get_just_released()
         kyy=pygame.key.get_pressed()
+        # Get mouse position
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+
         for bullet in self.bullet:
             bullet.rect.y-=6
         for setting in self.setting.sprites():
+            if mouse_y>=250 and mouse_y<300 and count!=0 and not(help) and not(choose_ship):
+                setting.rect.x=(screen_width/2)-100
+                setting.rect.y=250
+            if mouse_y>=300 and mouse_y<350 and not(help) and not(choose_ship):
+                setting.rect.x=(screen_width/2)-100
+                setting.rect.y=300
+            if mouse_y>=350 and mouse_y<400 and not(help) and not(choose_ship):
+                setting.rect.x=(screen_width/2)-100
+                setting.rect.y=350
+            if mouse_y>=400 and mouse_y<450 and not(help) and not(choose_ship):
+                setting.rect.x=(screen_width/2)-100
+                setting.rect.y=400
+            if mouse_y>=450 and mouse_y<500 and not(help) and not(choose_ship):
+                setting.rect.x=(screen_width/2)-100
+                setting.rect.y=450
+            if mouse_y>550 and mouse_x>=screen_height-100:
+                setting.rect.x=screen_width-160
+                setting.rect.y=screen_height-75
+            if mouse_x>=275 and mouse_x<475 and not(help) and choose_ship:
+                setting.rect.x=275
+            if mouse_x>=475 and mouse_x<675 and not(help) and choose_ship:
+                setting.rect.x=475
+            if mouse_x>=675 and mouse_x<875 and not(help) and choose_ship:
+                setting.rect.x=675
             if keyy[pygame.K_w]  and (setting.rect.y>300 or count!=0) and setting.rect.y>250 and setting.rect.y!=screen_height-75:
                 navigate.play()
                 setting.rect.y-=50
@@ -384,7 +445,7 @@ class Setting:
                 setting.rect.y=screen_height-75
             if keyy[pygame.K_w] and setting.rect.y==screen_height-75:
                 navigate.play()
-                setting.rect.x=(screen_width/2)-50
+                setting.rect.x=(screen_width/2)-100
                 setting.rect.y=450
             if keyy[pygame.K_a] and setting.rect.x>275 and choose_ship:
                 navigate.play()
@@ -400,51 +461,51 @@ class Setting:
                 self.bullet.add(BUllet('images/player-laser.png',setting.rect.center))              
    #################################################################################################################################
     def fun(self):
-        global in_game,help,choose_ship,ship_option,arrow,running,count,num_enmeys,wave_1,wave_2,wave_3,wave_4,life,border1,border2,mute,unmute
+        global in_game,help,choose_ship,ship_option,arrow,running,count,num_enmeys,wave_1,wave_2,wave_3,wave_4,life,border1,border2,mute,unmute,selected
         keyy=pygame.key.get_just_released()
-        if keyy[pygame.K_f]:
+        if selected:
+            selected=False
             if choose_ship:
-                choose_ship=False
-                
-                for setting in self.setting.sprites():
-                    if setting.rect.x==475:
-                        select.play()
-                        ship_option='player2'
-                        arrow='setting2'
-                    elif setting.rect.x==675:
-                        select.play()
-                        ship_option='player3'
-                        arrow='setting3'
-                    elif setting.rect.x==275:
-                        select.play()
-                        ship_option='player'
-                        arrow='setting'
-                    for new in game.enmeys.sprites():
-                        new.kill()
-                    for new in game.player.sprites():
-                        new.kill()
-                    for new in game.enmey_bulet.sprites():
-                        new.kill()
-                    for new in game.player_bulet.sprites():
-                        new.kill()
-                    for new in game.explosion.sprites():
-                        new.kill()
-                    count=0
-                    num_enmeys=9
-                    wave_1=True
-                    wave_2=False
-                    wave_3=False
-                    wave_4=False
-                    life=3
-                    border1=0
-                    border2=screen_width/2
-                    setting.kill()
-                for ship in self.ship.sprites():
-                    ship.kill()
-                self.setting.add(Enmey((screen_width/2)-50,400,False,arrow,30,30))
+                    choose_ship=False
+
+                    for setting in self.setting.sprites():
+                        if setting.rect.x==475:
+                            select.play()
+                            ship_option='player2'
+                            arrow='setting2'
+                        elif setting.rect.x==675:
+                            select.play()
+                            ship_option='player3'
+                            arrow='setting3'
+                        elif setting.rect.x==275:
+                            select.play()
+                            ship_option='player'
+                            arrow='setting'
+                        for new in game.enmeys.sprites():
+                            new.kill()
+                        for new in game.player.sprites():
+                            new.kill()
+                        for new in game.enmey_bulet.sprites():
+                            new.kill()
+                        for new in game.player_bulet.sprites():
+                            new.kill()
+                        for new in game.explosion.sprites():
+                            new.kill()
+                        count=0
+                        num_enmeys=9
+                        wave_1=True
+                        wave_2=False
+                        wave_3=False
+                        wave_4=False
+                        life=3
+                        border1=0
+                        border2=screen_width/2
+                        setting.kill()
+                    for ship in self.ship.sprites():
+                        ship.kill()
+                    self.setting.add(Enmey((screen_width/2)-100,400,False,arrow,30,30))
             else:
                 for setting in self.setting.sprites():
-                    print("enter")
                     if setting.rect.y==250:
                         select.play()
                         for new in game.enmeys.sprites():
@@ -503,17 +564,20 @@ class Setting:
                         background_sound.play()
                         unmute=True
                         mute=False
+
+        if keyy[pygame.K_f] :
+                selected=True
         if keyy[pygame.K_ESCAPE]:
             if help:
                 help=False
                 for settng in self.setting.sprites():
                     settng.kill()
-                self.setting.add(Enmey((screen_width/2)-50,350,False,arrow,30,30))
+                self.setting.add(Enmey((screen_width/2)-100,350,False,arrow,30,30))
             if choose_ship:
                 choose_ship=False
                 for settng in self.setting.sprites():
                     settng.kill()
-                self.setting.add(Enmey((screen_width/2)-50,400,False,arrow,30,30))
+                self.setting.add(Enmey((screen_width/2)-100,400,False,arrow,30,30))
     #################################################################################################################################
     def draw(self):
         global count,play_color,help_color,ship_color,exit_color,retry_color,play_pos,help_pos,ship_pos,exit_pos,retry_pos
@@ -521,32 +585,32 @@ class Setting:
         for setting in self.setting.sprites():
             if setting.rect.y==250:
                 play_color,help_color,ship_color,exit_color=(0,255,0),(0,255,0),(0,255,0),(0,255,0) 
-                play_pos,help_pos,ship_pos,exit_pos=screen_width/2,screen_width/2,screen_width/2,screen_width/2
-                retry_pos=(screen_width/2)+10
+                play_pos,help_pos,ship_pos,exit_pos=(screen_width/2)-50,(screen_width/2)-50,(screen_width/2)-50,(screen_width/2)-50
+                retry_pos=(screen_width/2)-40
                 retry_color=(255,0,0)
             elif setting.rect.y==300:
                 retry_color,help_color,ship_color,exit_color=(0,255,0),(0,255,0),(0,255,0),(0,255,0)
                 play_color=(255,0,0)
-                play_pos=(screen_width/2)+10
-                help_pos,ship_pos,exit_pos,retry_pos=screen_width/2,screen_width/2,screen_width/2,screen_width/2
+                play_pos=(screen_width/2)-40
+                help_pos,ship_pos,exit_pos,retry_pos=(screen_width/2)-50,(screen_width/2)-50,(screen_width/2)-50,(screen_width/2)-50
             elif setting.rect.y==350:
                 retry_color,play_color,ship_color,exit_color=(0,255,0),(0,255,0),(0,255,0),(0,255,0)
                 help_color=(255,0,0)
-                help_pos=(screen_width/2)+10
-                play_pos,ship_pos,exit_pos,retry_pos=screen_width/2,screen_width/2,screen_width/2,screen_width/2
+                help_pos=(screen_width/2)-40
+                play_pos,ship_pos,exit_pos,retry_pos=(screen_width/2)-50,(screen_width/2)-50,(screen_width/2)-50,(screen_width/2)-50
             elif setting.rect.y==400:
                 retry_color,play_color,help_color,exit_color=(0,255,0),(0,255,0),(0,255,0),(0,255,0)
                 ship_color=(255,0,0)
-                ship_pos=(screen_width/2)+10
-                play_pos,help_pos,exit_pos,retry_pos=screen_width/2,screen_width/2,screen_width/2,screen_width/2
+                ship_pos=(screen_width/2)-40
+                play_pos,help_pos,exit_pos,retry_pos=(screen_width/2)-50,(screen_width/2)-50,(screen_width/2)-50,(screen_width/2)-50
             elif setting.rect.y==450:
                 retry_color,play_color,help_color,ship_color=(0,255,0),(0,255,0),(0,255,0),(0,255,0)
                 exit_color=(255,0,0)
-                exit_pos=(screen_width/2)+10
-                play_pos,help_pos,ship_pos,retry_pos=screen_width/2,screen_width/2,screen_width/2,screen_width/2
+                exit_pos=(screen_width/2)-40
+                play_pos,help_pos,ship_pos,retry_pos=(screen_width/2)-50,(screen_width/2)-50,(screen_width/2)-50,(screen_width/2)-50
             else:
                 retry_color,play_color,help_color,ship_color,exit_color=(0,255,0),(0,255,0),(0,255,0),(0,255,0),(0,255,0)
-                ship_pos,play_pos,help_pos,exit_pos,retry_pos=screen_width/2,screen_width/2,screen_width/2,screen_width/2,screen_width/2
+                ship_pos,play_pos,help_pos,exit_pos,retry_pos=(screen_width/2)-50,(screen_width/2)-50,(screen_width/2)-50,(screen_width/2)-50,(screen_width/2)-50
         if help:
             screen.blit(font.render('press "a" to go left, "d" to go right and "space" to fire',True,(0,255,0)),(100,screen_height-60))
             self.setting.draw(screen)
@@ -588,6 +652,8 @@ while running:
         if event.type == ALIENLASER and shoot and in_game:
             if(life>0):
                 game.enmey_shoot()
+        if event.type == pygame.MOUSEBUTTONDOWN:
+                selected=True
     if in_game:
         if wave_1 and num_enmeys==0:
             wave_1=False
@@ -607,14 +673,16 @@ while running:
         if count==0:
             game.add()
             count+=1
+            recharge_time=pygame.time.get_ticks()
         if keys[pygame.K_SPACE] and in_game:
             if (current_time-time)>=800 and shoot:
                 if(life>0):
                     game.player_shoot()
                     laser_sound.play()
                 time=pygame.time.get_ticks()
-        if keys[pygame.K_RSHIFT] and in_game and  current_time-recharge_time>=2000:
-            recharge_time=pygame.time.get_ticks()
+        if keys[pygame.K_RSHIFT] and in_game and  current_time-recharge_time>=5000:
+            # recharge_time=pygame.time.get_ticks()
+            shield_active=True
         if keys[pygame.K_ESCAPE] and in_game:
             in_game=False
         game.contact()
