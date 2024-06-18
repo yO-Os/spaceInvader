@@ -27,8 +27,8 @@ border2=screen_width/2###used to indcate where the second door is placed
 life=3
 selected=False
 bullet_speed=7
-num_enmeys=9
 ship_speed=1
+num_enmeys=9
 ship_width=50
 ship_height=40
 time=pygame.time.get_ticks()
@@ -395,9 +395,9 @@ class Game:
             if wave_3:
                 screen.blit(font.render('Wave 3',True,(255,255,255)),(screen_width/2,0))
             if wave_4:
-                screen.blit(font.render('Wave 1',True,(255,255,255)),(screen_width/2,0))
+                screen.blit(font.render('Boss Level',True,(255,255,255)),(screen_width/2,0))
     def restart(self):
-        global count,in_game,num_enmeys,wave_1,wave_2,wave_3,wave_4,life,border1,border2
+        global count,in_game,num_enmeys,wave_1,wave_2,wave_3,wave_4,life,border1,border2,bullet_speed,ship_speed
         for new in self.enmeys.sprites():
             new.kill()
         for new in self.player.sprites():
@@ -418,6 +418,8 @@ class Game:
         life=3
         border1=0
         border2=screen_width/2
+        bullet_speed=7
+        ship_speed=1
 game=Game()
 #################################################################################################################################
 class Setting:
@@ -691,7 +693,7 @@ while running:
                     time=pygame.time.get_ticks()
             if keys[pygame.K_r] and in_game:
                 game.restart()
-            if keys[pygame.K_RSHIFT] and in_game and  current_time-recharge_time>=5000:
+            if keys[pygame.K_RSHIFT] and in_game and  current_time-recharge_time>=5000 and shoot:
                 # recharge_time=pygame.time.get_ticks()
                 shield_active=True
             if keys[pygame.K_ESCAPE] and in_game:
